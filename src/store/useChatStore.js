@@ -3,7 +3,7 @@ import { toast } from "react-hot-toast";
 import { axiosInstance } from "../lib/axios.js";
 
 export const useChatStore = create((set, get) => ({
-  messages: [], // Ensure this is an empty array by default
+  messages: [],
   users: [],
   selectedUser: null,
   isUsersLoading: false,
@@ -23,7 +23,7 @@ export const useChatStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({ messages: res.data || [] });
+      set({ messages: res.data });
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -31,8 +31,8 @@ export const useChatStore = create((set, get) => ({
     }
   },
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
-    const currentMessages = get().getValidMessages({ messages });
+    const { selectedUser, messages, getValidMessages } = get();
+    const currentMessages = getValidMessages(messages);
     if (!selectedUser || !selectedUser._id) {
       toast.error("No recipient selected.");
       return;
@@ -42,26 +42,18 @@ export const useChatStore = create((set, get) => ({
         `/messages/send/${selectedUser._id}`,
         messageData
       );
-      console.log("Message sent successfully:", res.data);
       if (!res.data) throw new Error("Invalid response from server");
-      set({ messages: [...currentMessages, res.data] });
+      set({
+        messages: { ...messages, messages: [...currentMessages, res.data] },
+      });
       toast.success("Message sent successfully");
-      get().getMessages(selectedUser._id);
     } catch (error) {
       console.error("Error sending message:", error);
-      const errorMessage =
-        error.response?.data?.message || "Failed to send message.";
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || "Failed to send message.");
     }
   },
-  subscribeToMessages: () => {
-    get().unsubscribeFromMessages();
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-  },
-  unsubscribeFromMessages: () => {
-    console.log("Unsubscribed from newMessage event.");
-  },
+  subscribeToMessages: () => {},
+  unsubscribeFromMessages: () => {},
   setSelectedUser: (selectedUser) => set({ selectedUser }),
   getValidMessages: (state) =>
     Array.isArray(state.messages) ? state.messages : [],

@@ -25,7 +25,6 @@ const ChatContainer = () => {
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
-      console.log("scrolling to end");
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
